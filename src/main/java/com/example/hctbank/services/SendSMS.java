@@ -1,15 +1,12 @@
 package com.example.hctbank.services;
 
 import com.vonage.client.VonageClient;
-import com.vonage.client.sms.MessageStatus;
-import com.vonage.client.sms.SmsSubmissionResponse;
 import com.vonage.client.sms.messages.TextMessage;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+
 
 @Getter
 @Setter
@@ -22,9 +19,6 @@ public class SendSMS {
 
     @Value("${hct.bank.sms.api.secret}")
     String apiSecret;
-
-
-
 
     VonageClient client;
 

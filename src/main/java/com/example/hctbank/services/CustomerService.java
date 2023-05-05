@@ -4,6 +4,7 @@ import com.example.hctbank.dto.*;
 import com.example.hctbank.entities.Account;
 import com.example.hctbank.entities.Customer;
 import com.example.hctbank.entities.CustomerAccountMap;
+import com.example.hctbank.entities.Transaction;
 import com.example.hctbank.entities.embeddable.Address;
 import com.example.hctbank.exceptions.FailedTransactionException;
 import com.example.hctbank.exceptions.InvalidException;
@@ -11,6 +12,7 @@ import com.example.hctbank.repositories.CustomerAccountRepository;
 import com.example.hctbank.repositories.CustomerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,10 +26,11 @@ public class CustomerService {
     private final CustomerAccountRepository customerAccountRepository;
     private final CustomerRepository customerRepository;
     private final SendSMS sendSMS;
+    private final WebClient webClient;
 
     public CustomerService(CustomerRepository customerRepository, CustomerAccountRepository customerAccountRepository,
                             TransactionService transactionService,CustomerAccountService customerAccountService,
-                           AccountService accountService, SendSMS sendSMS
+                           AccountService accountService, SendSMS sendSMS, WebClient webClient
         ){
         this.accountService = accountService;
         this.transactionService = transactionService;
@@ -35,6 +38,7 @@ public class CustomerService {
         this.customerAccountRepository = customerAccountRepository;
         this.customerRepository = customerRepository;
         this.sendSMS = sendSMS;
+        this.webClient = webClient;
     }
 
     @Transactional
@@ -53,6 +57,7 @@ public class CustomerService {
     }
 
     public UserRegisterDTO registerCustomers(CustomerRequestCreateDTO customerRequestCreateDTO){
+
         Account account = accountService.createAccount(new Account());
         Address address = Address.builder().AddressLane(customerRequestCreateDTO.getAddressLane())
                 .pincode(customerRequestCreateDTO.getPincode())
@@ -67,10 +72,21 @@ public class CustomerService {
 
         Customer customer = customerRepository.save(customer1);
 
+
         System.out.println("Saved Account is " + account);
         System.out.println("saved customer is: "  +customer);
         customerAccountService.mapCustomerToAccount(customer, account);
+        String sms = webClient.get().
+                 uri(uriBuilder ->
+                         uriBuilder.port(8081).queryParam("phone",customer1.getPhone())
+                                 .queryParam("accId",account.getId())
+                                 .build())
+                 .retrieve().bodyToMono(String.class).block();
+        System.out.println("Response from SMS service: "+sms);
+
+        //TODO :   Delete below classes and related services.
         sendSMS.sendSms(customer1.getPhone(), account.getId());
+        //
         return UserRegisterDTO.builder()
                 .name(customer.getName())
                 .customer_id(customer.getId())
@@ -156,5 +172,23 @@ public class CustomerService {
             }
         }
         return transactionResponseDTO;
+    }
+
+    public List<TransactionPdfDTO> generatePdf(Long acc_id) {
+        List<TransactionPdfDTO> list3 = new ArrayList<>();
+        List<Transaction> list =  transactionService.getTransaction(acc_id, null);
+        for (Transaction t : list){
+            TransactionPdfDTO transactionPdfDTO = TransactionPdfDTO.builder().
+                    date(t.getLastUpdated())
+                    .Description("CREDIT")
+                    .balance(t.getAvlBalance())
+                    .in(t.getCredit())
+                    .out(t.getDebit())
+                    .build();
+            list3.add(transactionPdfDTO);
+        }
+
+        return list3;
+
     }
 }

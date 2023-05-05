@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Information</title>
+</head>
+<body>
+<h1>Customer Information</h1>
+<table>
+    <thead>
+    <tr>
+        <th>Customer ID</th>
+        <th>Account ID</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Email</th>
+        <th>Created On</th>
+    </thead>
+    <tbody>
+    <tr th:each="customer : ${customers}">
+        <td th:text="${customer.customer_id}"></td>
+        <td th:text="${customer.account_id}"></td>
+        <td th:text="${customer.name}"></td>
+        <td th:text="${customer.phone}"></td>
+        <td th:text="${customer.email}"></td>
+        <td th:text="${customer.created_on}"></td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
